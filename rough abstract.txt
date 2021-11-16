@@ -1,0 +1,43 @@
+Stroke is one of the leading causes of the death worldwide these days. About 1/5th of patients with an acute stroke die
+within a month of event and at least 1/2nd of those who survive are left with physical disability.
+
+There are 15 million people worldwide who suffer a stroke each year. According to the World
+Health Organization (WHO), stroke is the second leading cause of death for people above the age of 60 years,
+and the fifth leading cause in people aged 15 to 59 years old. Each year, nearly six million people worldwide
+die from stroke. One in six people worldwide will have a stroke in their lifetime. Every six seconds, stroke kills
+some.
+
+As the study suggests hypertension remained the most common risk factor for Stroke followed by Smoking and diabetes Mellitus and dyslipidemia.
+
+Infact Strokes continues to play and pivotal role in killing as many humans getting killed by AIDS,TUBERCLOISIS AND MALARIA COMBINED.
+So Brain stroke is a  a medical emergency and can lead to death or permanent disability.
+React Fast when you think someone might be having a stroke.
+Time to call 1-0-8
+
+Some Facts bout strokes..
+Strokes devastes lives around the world.
+13.7 M new strokes each year.
+80M stroke survivors worldwide.
+5.5M death due to stroke each year.
+1 in 4 people over age 25 will experience stroke in their lifetime.
+According to world stroke organisation.
+
+so using the dataset collected from the kaggle datasets, we have used some techniques and a predictive model in order to detect whether a person has a chance of getting stroke or not,
+using different variabls. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+BRAIN STROKE PREDICTION ON A PERSON.
+PREDICTING CHANCES OF PERSON HAVING BRAIN STROKE.
+PREDICTING POSSIBILITY OF A PERSON EXPERIENCING BRAIN STROKE.

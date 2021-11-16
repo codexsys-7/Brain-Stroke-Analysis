@@ -1,0 +1,1293 @@
+# **Brain Stroke Prediction Using Machine Learning and Data Science.**
+
+
+### **Importing Necessary Libraries.**
+
+#pip install autoviz
+#pip install pandas
+#pip install matplotlib.pyplot
+#pip install seaborn
+#pip install numpy
+#pip install sklearn
+#pip install collections
+#pip install ipywidgets
+#pip install imblearn
+#pip install statsmodels
+#pip install warnings
+
+import pandas as pd
+import matplotlib.pyplot as plt
+%matplotlib inline
+plt.style.use('dark_background')
+import seaborn as sns
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix,classification_report, accuracy_score, precision_recall_curve,precision_score,recall_score,f1_score, roc_auc_score, roc_curve, auc
+from sklearn.preprocessing import StandardScaler
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from imblearn.over_sampling import RandomOverSampler,SMOTE
+from imblearn.combine import SMOTETomek
+from collections import Counter
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+import warnings
+warnings.filterwarnings(action='ignore')
+from sklearn import tree
+import autoviz
+from autoviz.AutoViz_Class import AutoViz_Class
+#for interactive console
+import ipywidgets
+import ipywidgets as widgets
+from ipywidgets import interact
+from ipywidgets import interact_manual
+
+### **Importing and Skimming the Data Set.**
+The Data set consists of 40000+ entries of Patients Regarding Brain Stroke symptoms.
+There are total of 12 columns including target_column.
+1. id
+2. gender
+3. age
+4. hypertension
+5. heart_disease
+6. ever_married
+7. work_type
+8. Residence_type
+9. avg_glucose_level
+10. bmi
+11. smoking_status
+12. stroke(target_column)
+
+dodge = pd.read_csv('train_strokes.csv')
+
+# head() helps us to view the first 5 entries in our dataset.
+
+dodge.head()
+
+# info() gives us the count and dtype, also helps us to identify whether there are any null values or not.
+
+dodge.info()
+
+# describe() gives us a breif description about the columns(count, min, max, mean, median etc)
+
+dodge.describe()
+
+# In the case of object columns we get(count, unique values, top, freq)
+dodge.describe(include = 'object')
+
+### **Exploring Target Variable.**
+
+dodge['stroke'].value_counts()
+
+# There arent any null values, but
+dodge['stroke'].isnull().sum()
+
+# This plot tell's about, how the distribution of target class is spreaded.
+# we can see that the target classes are highly imbalanced with 0->42617, 1->783, so we need to balance these target classes which we will see in the later part.
+# countplot() helps us to visualize the count the classes.
+
+plt.figure(figsize = (6,4), dpi = 100)
+sns.countplot(dodge['stroke'])
+plt.xlabel('Stroke Status')
+plt.ylabel('Count')
+plt.title('Distribution of Target Classes')
+plt.show()
+
+### **Exploring Independent Numerical Columns.**
+
+
+1. Cleaning
+2. Treating Missing values
+3. Anamoly Detection and Reduction
+
+
+
+numerical = ['age', 'hypertension', 'heart_disease', 'avg_glucose_level', 'bmi']
+#dodge[numerical[0]]
+
+#### Treating missing values present in the column dodge['bmi'], no other numerical columns has missing values.
+
+
+
+
+
+dodge['bmi'].isnull().sum()
+
+dodge['bmi'] = dodge['bmi'].fillna(dodge['bmi'].mean())
+
+dodge['bmi'].isnull().sum()
+
+#### Exploring each numerical column using describe()
+
+
+
+
+
+for i in numerical:
+  print(dodge[i].describe())
+
+
+
+### **Anamoly Detection and Reduction in Numericals.** 
+
+#### 1. age
+
+dodge['age'].describe()
+
+dodge['age'].value_counts()
+
+Function to check the Anamolies in the column using upper_limit and lower_limit.
+
+
+1. If the upper_limit > max(df['col']), then we replace the upper_limit with the max value.
+2. Similarly, if the lower_limit < min(df['col']), we replace the lower_limit with the min value.
+
+
+
+anamolies = []
+def outliers(data):
+  random_state_mean = np.mean(data)
+  random_state_std = np.std(data)
+  anamoly = random_state_std * 3
+
+  upper_limit = random_state_mean + anamoly
+  lower_limit = random_state_mean - anamoly
+  lp_lower_limit = 1.00
+  up_upper_limit = max(dodge['age'])
+  print(upper_limit)
+  print(lower_limit)
+
+  print(lp_lower_limit)
+  print(up_upper_limit)
+
+  for i in data:
+      if i < lp_lower_limit or i > up_upper_limit:
+        anamolies.append(i)
+
+outliers(dodge['age'])
+print(len(anamolies))
+
+dodge.shape
+
+Here all the values below 1 are termed as outliers, although in rarest of cases Intrauterine stroke occur to unborn childre in the womb.
+
+But in this project we drop those values, but in future we can even work on these values.
+
+
+
+dodge[dodge['age'] < 1.00]
+
+dodge[dodge['age'] < 1.00].index
+
+chevy = dodge.drop(index = dodge[dodge['age'] < 1.00].index, axis = 0, inplace=True)
+
+dodge.drop(index = dodge[(dodge.age > 1.0) & (dodge.age < 2.0)].index, axis = 0, inplace = True)
+
+dodge.shape
+
+#### 2. avg_glucose_level(Average Glucose Level)
+
+anamolies = []
+def outliers(data):
+  random_state_mean = np.mean(data)
+  random_state_std = np.std(data)
+  anamoly = random_state_std * 3
+
+  upper_limit = random_state_mean + anamoly
+  lower_limit = random_state_mean - anamoly
+  ll_p = min(dodge['avg_glucose_level'])
+
+  print(upper_limit)
+  print(lower_limit)
+  print(ll_p)
+  for i in data:
+    if i < ll_p or i > upper_limit:
+      anamolies.append(i)
+
+outliers(dodge['avg_glucose_level'])
+print(len(anamolies))
+
+dodge['avg_glucose_level'].describe()
+
+dodge[dodge['avg_glucose_level'] > 234.40827023316058 ]
+
+dodge[dodge['avg_glucose_level'] > 234.40827023316058].index
+
+dodge.drop(index = dodge[dodge['avg_glucose_level'] > 234.40827023316058].index, axis = 0, inplace = True)
+
+dodge.shape
+
+#### 3. bmi(Body Mass Index)
+
+anamolies = []
+def outliers(data):
+  random_state_mean = np.mean(data)
+  random_state_std = np.std(data)
+  anamoly = random_state_std * 3
+
+  upper_limit = random_state_mean + anamoly
+  lower_limit = random_state_mean - anamoly
+  lll_p = min(dodge['bmi'])
+
+  print(upper_limit)
+  print(lower_limit)
+  print(lll_p)
+  for i in data:
+    if i < lll_p or i > upper_limit:
+      anamolies.append(i)
+
+outliers(dodge['bmi'])
+print(len(anamolies))
+
+dodge['bmi'].describe()
+
+dodge[dodge['bmi'] > 51.35486554902225]
+
+dodge[dodge['bmi'] > 51.35486554902225].index
+
+dodge.drop(index = dodge[dodge['bmi'] > 51.35486554902225].index, axis = 0, inplace = True)
+
+dodge.shape
+
+### **Exploring Independent Categorical(Object/String) Columns.**
+
+
+1. Cleaning
+2. Treating Missing values
+
+
+
+dodge.isnull().sum()
+
+categorical = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status']
+
+for i in categorical:
+  print(dodge[i].describe())
+
+dodge.describe(include = 'object')
+
+dodge['smoking_status'].value_counts()
+
+dodge.describe(include = 'all')
+
+#### Treating Missing values in Object columns using,
+1. mean/median/mode
+2. Based on frequency Distribution.
+
+dodge['smoking_status'].mode()
+
+dodge['smoking_status'].fillna('never smoked',inplace = True)
+
+dodge['smoking_status'].isnull().sum()
+
+dodge.info()
+
+dodge.head()
+
+### **Exploratory Data Analysis.** 
+Exploratory Data Analysis helps us the understand the insights and extract the patterns from the dataset, which might be helpful to explain about the problem statement given to our clients.
+This can also be done by using traditional python code, But Visualizing the data looks more eye catching than looking at some numbers and letters.
+so, hence we are going to use various plots and graphs to visualize, which comes from the libraries such as,
+seaborn and matplotlib.pyplot.
+1. bar
+2. countplot
+3. piechart
+4. hist
+5. box
+6. scatterplot
+7. pairplot
+
+Apart from this we have also used and auto visualization tool, "autoviz"
+
+dodge.isnull().sum()
+
+dodge.drop(columns = 'id', inplace=True)
+
+dodge.head()
+
+
+-> pd.crosstab() function is a very useful and most advanced fuction in the python dataframe, it helps us to compare 2 variables, due to which we can plot the distribution of thsoe variables. 
+
+#### 1. Bar plot for crosstab distribution between gender and stroke.
+
+plt.figure(figsize = (8,6))
+x = pd.crosstab(dodge['gender'], dodge['stroke'])
+x.plot(kind = 'bar')
+#x.div(x.sum(1).astype(float), axis = 0).plot(kind='bar', stacked = False)
+plt.xlabel('Gender_distribution')
+plt.ylabel('Count')
+plt.title('Gender Distribution over Target Class')
+plt.show()
+
+
+
+#### 2. Pie Chart for distribution of gender.
+
+# PIE CHART for dodge['gender'] column.
+
+plt.figure(figsize = (8,6), dpi = 90)
+labels = dodge['gender'].value_counts().index
+sizes = dodge['gender'].value_counts()
+explode = [0,0,0.1]
+colors = plt.cm.autumn(np.linspace(0,1,3))
+plt.pie(sizes, colors=colors, labels=labels, explode=explode, shadow =True, startangle=90, autopct = '%.2f%%' )
+plt.title('Gender',fontsize=12)
+plt.legend()
+plt.show()
+
+#### 3. Bar chart for gender-hypertentsion distribution.
+
+plt.figure(figsize = (8,6), dpi = 90)
+x = pd.crosstab(dodge['gender'],dodge['hypertension'])
+x.plot(kind = 'bar')
+plt.xlabel('Gender')
+plt.ylabel('Hypertension')
+plt.title("Gender_Hypertension_Distribution")
+plt.show()
+
+ #### 4. Bar Chart for age-hypertension distribution 
+
+plt.rcParams['figure.figsize'] = (20,12)
+x = pd.crosstab(dodge['age'], dodge['hypertension'])
+x.plot(kind = 'bar')
+plt.xlabel('Age')
+plt.ylabel('Count')
+plt.title("Age Hypertension Distrubition")
+plt.show()
+
+#### 5. Bar Chart for gender-heart_disease distribution
+
+plt.figure(figsize=(12,10))
+ab = pd.crosstab(dodge['gender'], dodge['heart_disease'])
+ab.plot(kind = 'bar')
+plt.xlabel('Gender')
+plt.ylabel('Count')
+plt.show()
+
+#### 6. age-stroke distribution
+
+plt.rcParams['figure.figsize'] = (20,12)
+x = pd.crosstab(dodge['age'], dodge['stroke'])
+x.plot(kind = 'bar')
+plt.xlabel('Age')
+plt.ylabel('Count')
+plt.title("Age_Stroke Distrubition")
+plt.show()
+
+#### 7. age-heart_disease distribution.
+
+plt.rcParams['figure.figsize'] = (20,12)
+#plt.figure(figsize =(13,6))
+x = pd.crosstab(dodge['age'], dodge['heart_disease'])
+x.plot(kind = 'bar')
+plt.xlabel('Age')
+plt.ylabel('Count')
+plt.title("Age Heart_Disease Distrubition")
+plt.show()
+
+#### 8. Distribution of people getting stroke with respect to whether they are married or not.
+
+plt.rcParams['figure.figsize'] = (8,6)
+h = pd.crosstab(dodge['ever_married'], dodge['stroke'])
+h.plot(kind ='bar')
+plt.show()
+
+#### 9. Scatterplot for avg_glucose level and bmi with hue as stroke, hue is an additional parameter which seperates the classes using different colors.
+
+plt.rcParams['figure.figsize'] = (20,12)
+sns.relplot(dodge['avg_glucose_level'], dodge['bmi'], hue = dodge['stroke'], kind = 'scatter')
+plt.xlabel('Avg_Glucose_Level')
+plt.ylabel('BMI')
+plt.show()
+
+#### 10. Countplot() for checking distribution of work_type.
+
+plt.figure(figsize = (12,10))
+sns.countplot(dodge['work_type'], color ='red')
+plt.xlabel("Work Type")
+plt.ylabel('Count')
+plt.title("Distribution of Work_type")
+plt.show()
+
+#### 11. Distribution of work_type with respect to stroke occurence.
+
+plt.rcParams['figure.figsize'] = (8,6)
+h = pd.crosstab(dodge['work_type'], dodge['stroke'])
+h.plot(kind ='bar')
+plt.xlabel("Work_type")
+plt.ylabel("Count")
+plt.title("Distribution of Work_type and stroke")
+plt.show()
+
+#### autoviz -> An AutoVisualization tool, which helps to visualize the features in the dataset more in depth.
+
+AV = AutoViz_Class()
+autovis = AV.AutoViz(filename = 'train_strokes.csv', sep=',', depVar='', dfte=None, header=0, verbose=2,
+                            lowess=False,chart_format='svg',max_rows_analyzed=150000,max_cols_analyzed=30)
+autovis
+
+### **Exploring data using Traditional python code, with the help of interactive widgets.**
+
+abg = dodge[['hypertension', 'heart_disease']].groupby(['hypertension']).count().style.background_gradient(cmap = 'viridis')
+
+Sum of Heart Disease values with respect to hypertension, This can be easily eaxplained by crosstab()
+
+abg
+
+dre = pd.crosstab(dodge['hypertension'], dodge['heart_disease'])
+dre
+
+#### @interact:
+The interact function (ipywidgets.interact) automatically creates user interface (UI) controls for exploring code and data interactively.
+
+The function gets called each time the slider is moved.
+
+@interact
+def abc(x = 50):
+  y = dodge[dodge['avg_glucose_level'] > x]
+  return y['stroke'].value_counts()
+abc()
+
+@interact
+def hyp_heart(x=0, y=0):
+  g = dodge[(dodge['hypertension'] == x) & (dodge['heart_disease'] == y)]
+  return g['stroke'].value_counts()
+hyp_heart()
+
+@interact
+def hy_he_eve(x=0,y=0,z='No'):
+  j = dodge[(dodge['hypertension'] == x) & (dodge['heart_disease'] == y) & (dodge['ever_married'] == z)]
+  return j['stroke'].value_counts(), j['smoking_status'].value_counts()
+hy_he_eve()
+
+### **Feature Transformation.**
+Feature Transformation is the technique of transforming the variable into other form like Strings -> Numeric, splitting the Date Column in to pieces etc.
+
+ Types of encoding.
+#### 1. Nominal Encoding.
+  *   one hot encoding -> Creating Dummy variables.
+  *   one hot encoding with multi categories(more than 20 categories)
+  *   mean encoding
+
+
+#### 2. Ordinal Encoding.
+  * Label Encoder
+  * target_guided_encoding
+
+-> For the columns with less than 5 categories we can manually perform encoding, usinf map().
+
+-> For Columns with more than 20 Categories we can perform one hot encoding with multi categories, where we tend to select the top categories based on their value_counts().
+
+
+dodge.head()
+
+dodge['smoking_status'].unique()
+
+mapping = {'Male':2, 'Female':1, 'Other':0}
+mapping1 = {'No':0, 'Yes':1}
+mapping2 = {'never smoked':0, 'formerly smoked':1, 'smokes':2}
+
+dodge['gender'] = dodge['gender'].map(mapping)
+
+dodge['ever_married'] = dodge['ever_married'].map(mapping1)
+
+dodge['smoking_status'] = dodge['smoking_status'].map(mapping2)
+
+dodge[['gender', 'smoking_status', 'ever_married']].head()
+
+dodge['work_type'].unique()
+
+dodge['Residence_type'].unique()
+
+dodge['home_town'] = pd.get_dummies(dodge['Residence_type'], drop_first = True)
+
+Creating a new dataframe with respect to work_type.
+
+f150 = pd.get_dummies(dodge['work_type'], drop_first = True)
+
+Merging 2 DataFrames(dodge,f150) with the default join.
+
+camero = pd.concat([dodge,f150], axis = 1)
+
+camero.head()
+
+camero.rename(columns = {'Never_worked':'w_t_n_w', 'Private':'w_t_p', 'Self-employed':'w_t_s_e', 'children':'w_t_c'}, inplace = True)
+
+Droping the columns ['work_type', 'Residence_type'], as we have already created dummy variables for them.
+
+camero.drop(columns = ['work_type','Residence_type'], inplace = True)
+
+camero.head()
+
+camero.info()
+
+### **Feature Scaling**
+Feature Scaling is the technique to scale down all the values in the datset to same level, so that there will be no partiality while we train the model like bmi -> 56 getting high priority than heart_disease -> 0, so in order to remove this error, feature scaling is done.
+
+Feature Scaling Tools.
+1. Standardisation (values are centered around the mean with unit standard deviation.)
+2. Normalisation/min_max scaling.(values range from 0 to 1)
+
+#### StandardScaler()
+
+se = StandardScaler()
+abh = se.fit_transform(camero.drop(columns=['stroke']))
+mercury = pd.DataFrame(data = abh, columns = camero.drop(columns = ['stroke']).columns)
+mercury.head()
+
+### **Feature Selection**
+Selecting the best features which best contribute to our model.
+
+#### Correlation Diagram.
+
+plt.rcParams['figure.figsize'] = (20,12)
+corr = mercury.corr()
+sns.heatmap(corr, annot=True, cmap='autumn')
+plt.show()
+
+Function to select the best features with some threshold value.
+
+def correlation(dataset,threshold):
+    corr_list = []
+    corr_matrix = dataset.corr()
+    for i in range(len(corr_matrix.columns)):
+        for j in range(i):
+            if abs(corr_matrix.iloc[i,j] > threshold):
+                column = corr_matrix.columns[[i,j]]
+                corr_list.append(column)
+    print(len(corr_list))
+    return corr_list
+correlation(mercury,0.6)
+
+Although, we can see ['ever_married', 'age'] are somewhat correlated, but where as if we use 'Variance Inflation Factor", we ended up with fixing the Multicollinearirty.
+
+variance_inflation_factor -> it is used to remove multicollinearity between variables by removing as few variables as possible.
+
+#### VIF->Variance Inflation Factor
+
+vif = variance_inflation_factor 
+earth1 = pd.Series([vif(mercury.values, i) for i in range(mercury.shape[1])], index = mercury.columns)
+earth1
+
+Function to check and remove multicollinearity between independent variables.
+
+def mc(data):
+  earth = pd.Series([vif(data.values, i) for i in range(data.shape[1])], index = data.columns)
+  if earth.max() > 6:
+    print(earth[earth == earth.max()].index[0], 'Has Been Removed.')
+    data = data.drop(columns = earth[earth == earth.max()].index[0])
+  else:
+    print("MultiCollinearity Has Been Removed.")
+    return data
+
+for i in range(5):
+  mercury = mc(mercury)
+mercury.head()
+
+### **Splitting Data**
+Splitting the dataset 
+
+1. target_var
+2. Independent_var
+
+target_var = camero['stroke']
+inde_vars = camero.drop(columns=['stroke'], axis = 1)
+
+target_var
+
+inde_vars.head()
+
+### **Handling Imbalanced Dataset.**
+As we saw the target_calss was highly imbalanced, so we try to balance the target_class using Oversampling method, using "SMOTETomek" tool.
+
+camero.head()
+
+#### SMOTETomek Tool
+
+so = SMOTETomek()
+x_resample,y_resample = so.fit_sample(inde_vars, target_var.values.ravel())
+brad = pd.DataFrame(data=x_resample, columns = inde_vars.columns)
+
+#Before resampling
+print("Before Resampling Target_Variable: ")
+print(target_var.value_counts())
+
+# After resampling
+y_resample = pd.DataFrame(y_resample)
+print("After Resampling Target_Variable:")
+print(y_resample[0].value_counts())
+
+### **Train Test Split.**
+Splitting the data into train and test datasets.
+
+x_train,x_test,y_train,y_test = train_test_split(x_resample, y_resample, test_size = 0.3, random_state = 50)
+print(x_train.shape)
+print(y_train.shape)
+print(x_test.shape)
+print(y_test.shape)
+
+### **Feature Scaling Balanced Data.**
+Now, as we have balanced our data, we need to perform feature scaling to the banlanced data.
+
+
+x_train_ss = se.fit_transform(x_train)
+x_test_ss = se.transform(x_test)
+
+## **Creating Test Data.**
+
+ford = pd.read_csv("healthcare-dataset-stroke-data.csv")
+
+ford.head()
+
+ford.info()
+
+ford.drop(index = ford[(ford.age > 1.0) & (ford.age < 2.0)].index, axis = 0, inplace = True)
+
+ford.info()
+
+ford.shape
+
+anamolies = []
+def outliers(data):
+  random_state_mean = np.mean(data)
+  random_state_std = np.std(data)
+  anamoly = random_state_std * 3
+
+  upper_limit = random_state_mean + anamoly
+  lower_limit = random_state_mean - anamoly
+  uu =  max(ford['avg_glucose_level'])
+  ll = min(ford['avg_glucose_level'])
+
+  print(upper_limit)
+  print(lower_limit)
+  for i in data:
+    if i < ll or i > uu:
+      anamolies.append(i)
+
+outliers(ford['avg_glucose_level'])
+print(len(anamolies))
+
+dodge['avg_glucose_level'].describe()
+
+anamolies = []
+def outliers(data):
+  random_state_mean = np.mean(data)
+  random_state_std = np.std(data)
+  anamoly = random_state_std * 3
+
+  upper_limit = random_state_mean + anamoly
+  lower_limit = random_state_mean - anamoly
+  ll = min(ford['bmi'])
+
+  print(upper_limit)
+  print(lower_limit)
+  for i in data:
+    if i < ll or i > upper_limit:
+      anamolies.append(i)
+
+outliers(ford['bmi'])
+print(len(anamolies))
+
+ford[ford['bmi'] > 52.45615973942819]
+
+ford.drop(index = ford[ford['bmi'] > 52.45615973942819].index, axis = 0, inplace = True)
+
+ford.shape
+
+ford.isnull().sum()
+
+ford['bmi'].mean()
+
+ford['bmi'].fillna(ford['bmi'].mean(), inplace = True)
+
+ford['bmi'].isnull().sum()
+
+ford['smoking_status'].replace('Unknown', 'never smoked')
+
+ford.info()
+
+ford.drop(columns = ['id'], axis=1, inplace = True)
+
+ford['smoking_status'].replace({'Unknown':'never smoked'}, inplace = True)
+
+ford['gender'] = ford['gender'].map(mapping)
+
+ford['ever_married'] = ford['ever_married'].map(mapping1)
+
+ford['smoking_status'] = ford['smoking_status'].map(mapping2)
+
+ford[['gender', 'smoking_status', 'ever_married']].head()
+
+ford['work_type'].unique()
+
+ford['Residence_type'].unique()
+
+ford['home_town'] = pd.get_dummies(ford['Residence_type'], drop_first = True)
+
+rap = pd.get_dummies(ford['work_type'], drop_first = True)
+
+cam = pd.concat([ford,rap], axis = 1)
+
+cam.head()
+
+cam.rename(columns = {'Never_worked':'w_t_n_w', 'Private':'w_t_p', 'Self-employed':'w_t_s_e', 'children':'w_t_c'}, inplace = True)
+
+cam.drop(columns = ['work_type','Residence_type'], inplace = True)
+
+target = cam['stroke']
+original = cam.drop(columns = ['stroke'])
+
+resampled_x,resampled_y = so.fit_resample(original,target.values.ravel())
+pitt = pd.DataFrame(data = resampled_x, columns=original.columns)
+
+#Before resampling
+print("Before Resampling Target_Variable: ")
+print(target.value_counts())
+
+# After resampling
+resampled_y = pd.DataFrame(resampled_y)
+print("After Resampling Target_Variable:")
+print(resampled_y[0].value_counts())
+
+fish = se.fit_transform(resampled_x)
+lucas = pd.DataFrame(data = fish, columns = original.columns)
+
+lucas.head()
+
+lucas.info()
+
+## **Building Predictive Models.**
+1. Decision Tree
+2. Random Forest
+3. Logistic Regression
+
+## **Decision Tree Classifier**
+
+from sklearn.tree import DecisionTreeClassifier
+dt = DecisionTreeClassifier()
+dt.fit(x_train_ss,y_train)
+predictions = dt.predict(x_test_ss)
+
+print('The Training Accuracy of x_train and y_train is', dt.score(x_train_ss,y_train))
+print("The Testing Accuracy of x_test and y_test is", dt.score(x_test_ss,y_test))
+
+print(confusion_matrix(predictions,y_test))
+
+print(classification_report(predictions,y_test))
+
+print(accuracy_score(predictions, y_test))
+
+### **Tree Plot.**
+
+plt.figure(figsize = (15,10))
+tree.plot_tree(dt, filled = True)
+
+### Performing Cross Validation on DT Model.
+Performing cross validation on the dataset using StratifiedKFold and calculating the mean Accuracy that can be achieved by the model.
+
+x = pd.DataFrame(data = x_train_ss, columns = inde_vars.columns)
+y = y_train
+from sklearn.model_selection import  StratifiedKFold
+accuracy = []
+skf = StratifiedKFold(n_splits = 10, random_state = None)
+skf.get_n_splits(x,y)
+for train_index, test_index in skf.split(x,y):
+  print('Train:', train_index, 'Validation',test_index)
+  x1_train,x1_test = x.iloc[train_index],x.iloc[test_index]
+  y1_train,y1_test = y.iloc[train_index],y.iloc[test_index]
+  dt.fit(x1_train,y1_train)
+  pred = dt.predict(x1_test)
+  score = accuracy_score(pred,y1_test)
+  accuracy.append(score)
+print(accuracy)
+
+arr = np.array(accuracy)
+
+np.mean(arr)
+
+### Hyper Parameter Tuning the model to overcome Overfitting model.
+Determining the parameters by plotting f1_score metrics.
+1. Function to calculate f1_score.
+2. Function to plot the f1_score that we have calculated.
+3. Pass the parameter values in the model and call the functions.
+
+def cal_score(model, x1,y1,x2,y2):
+  model.fit(x1,y1)
+  p = model.predict(x1)
+  f1 = f1_score(y1, p)
+  p1 = model.predict(x2)
+  f2 = f1_score(y2,p1)
+  return f1,f2
+
+def effect(train, test, x_axis, title):
+  plt.figure(figsize = (12,10), dpi = 100)
+  plt.plot(x_axis, train, color = 'red', label = 'train_score')
+  plt.plot(x_axis, test, color = 'blue', label = 'test_score')
+  plt.legend()
+  plt.show()
+
+max_depth = [i for i in range(1,50)]
+train = []
+test = []
+for i in max_depth:
+  model =DecisionTreeClassifier(max_depth=i, random_state=50)
+  f1,f2 = cal_score(model, x_train, y_train, x_test, y_test)
+  train.append(f1)
+  test.append(f2)
+effect(train,test, range(1,50), 'Max_Depth')
+
+min_samples = [i for i in range(2,5000,25)]
+train = []
+test = []
+for i in min_samples:
+  model =DecisionTreeClassifier(max_depth=20, random_state=50, min_samples_split=i)
+  f1,f2 = cal_score(model, x_train, y_train, x_test, y_test)
+  train.append(f1)
+  test.append(f2)
+effect(train,test, range(2,5000,25), 'Min_Samples_Split')
+
+max_leaf = [i for i in range(2,200,10)]
+train = []
+test = []
+for i in max_leaf:
+  model =DecisionTreeClassifier(max_depth=20,min_samples_split=4250,max_leaf_nodes=i, random_state=50)
+  f1,f2 = cal_score(model, x_train, y_train, x_test, y_test)
+  train.append(f1)
+  test.append(f2)
+effect(train,test, range(2,200,10), 'Max_Leaf_Nodes')
+
+### Hyper Parameter Tuning the model by using roc_auc_curve.
+
+
+def cal_score1(model, x1,y1,x2,y2):
+  model.fit(x1,y1)
+  p = model.predict(x1)
+  false_positive_rate, true_positive_rate, thresholds = roc_curve(y1, p)
+  roc_auc_1 = auc(false_positive_rate, true_positive_rate)
+  p1 = model.predict(x2)
+  false_positive_rate, true_positive_rate, thresholds = roc_curve(y2, p1)
+  roc_auc_2 = auc(false_positive_rate, true_positive_rate)
+  return roc_auc_1,roc_auc_2
+
+def effect1(train, test, x_axis, title):
+  plt.figure(figsize = (12,10), dpi = 100)
+  plt.plot(x_axis, train, color = 'red', label = 'train_score')
+  plt.plot(x_axis, test, color = 'blue', label = 'test_score')
+  plt.legend()
+  plt.show()
+
+max_depth = [i for i in range(1,100)]
+train = []
+test = []
+for i in max_depth:
+  roc_auc_model =DecisionTreeClassifier(max_depth=i, random_state=50)
+  roc_auc_1,roc_auc_2 = cal_score1(roc_auc_model, x_train, y_train, x_test, y_test)
+  train.append(roc_auc_1)
+  test.append(roc_auc_2)
+effect1(train,test, range(1,100), 'Max_Depth')
+
+min_sample_leaff = [i for i in range(25,4000,25)]
+train = []
+test = []
+for i in min_sample_leaff:
+  roc_auc_model =DecisionTreeClassifier(max_depth=20, min_samples_leaf=i, random_state=50)
+  roc_auc_1,roc_auc_2 = cal_score1(roc_auc_model, x_train, y_train, x_test, y_test)
+  train.append(roc_auc_1)
+  test.append(roc_auc_2)
+effect1(train,test, range(25,4000,25), 'Min_Samples_Leaf')
+
+max_leaf_node = [i for i in range(2,200,10)]
+train = []
+test = []
+for i in max_leaf_node:
+  roc_auc_model =DecisionTreeClassifier(max_depth=20,max_leaf_nodes=i, min_samples_leaf=3700, random_state=50)
+  roc_auc_1,roc_auc_2 = cal_score1(roc_auc_model, x_train, y_train, x_test, y_test)
+  train.append(roc_auc_1)
+  test.append(roc_auc_2)
+effect1(train,test, range(2,200,10), 'Max_Leaf_Nodes')
+
+
+
+### Hyper parameter Tuning the model using ccp(cost complexity pruning)
+which helps us to select the best values for max_depth and max_samples_leaf parameter for Decision Tree.
+
+path = dt.cost_complexity_pruning_path(x_train_ss,y_train)
+ccp_alphas, impurities = path.ccp_alphas, path.impurities
+
+ccp_alphas
+
+clfs = []
+for i in ccp_alphas:
+  dt = DecisionTreeClassifier(random_state = 0, ccp_alpha=i)
+  dt.fit(x_train_ss,y_train)
+  clfs.append(dt)
+  print('Number of Nodes in the Last Tree is: {} with ccp_alpha: {}'.format(clfs[-1].tree_.node_count, ccp_alphas[-1]))
+
+Plotting a graph with Respect to Accuracy score and various clfs(classifiers)
+
+train_set = [dt.score(x_train_ss,y_train) for dt in clfs]
+test_set = [dt.score(x_test_ss,y_test) for dt in clfs]
+
+plt.figure(figsize = (12,10), dpi = 100)
+fig,ax = plt.subplots()
+ax.plot(ccp_alphas, train_set, marker = 'o', label = 'Train', drawstyle = 'steps-post')
+ax.plot(ccp_alphas, test_set, marker = 'o', label = 'Test', drawstyle = 'steps-post')
+ax.set_xlabel('ccp_alphas')
+ax.set_ylabel('Accuracy')
+ax.set_title("Accuracy and ccp_alphas Distribution")
+ax.legend()
+plt.show()
+
+So, After applying Hyper Parameter Tuning **With Respect to Evaluation Metrics**, our model has successfully overcomed the problem of overfitting which has occured earlier.
+
+modified_model = DecisionTreeClassifier(max_depth = 18, min_samples_split=4250, min_samples_leaf=3700, max_leaf_nodes=21)
+modified_model.fit(x_train_ss, y_train)
+pr = modified_model.predict(x_test_ss)
+
+print(modified_model.score(x_train_ss,y_train))
+print(modified_model.score(x_test_ss, y_test))
+print(accuracy_score(pr,y_test))
+
+### Tree Plot With Respect to Modified Model.
+
+plt.figure(figsize = (15,10))
+tree.plot_tree(modified_model, filled = True)
+
+
+
+### **Evaluating Tuned Model on Test Data.**
+
+hash = modified_model.predict(lucas)
+
+print(accuracy_score(hash,resampled_y))
+
+print(classification_report(hash,resampled_y))
+
+print(confusion_matrix(hash,resampled_y))
+
+print(precision_score(hash, resampled_y))
+
+print(recall_score(hash, resampled_y))
+
+print(f1_score(hash, resampled_y))
+
+
+
+### Verifying With Respect to ccp_alpha value.
+
+pathh = dt.cost_complexity_pruning_path(x_train_ss,y_train)
+ccp_alphass, impurities = path.ccp_alphas, path.impurities
+
+clfss = []
+for i in ccp_alphass:
+  dt = DecisionTreeClassifier(max_depth = 18, min_samples_split=4250, min_samples_leaf=3700, max_leaf_nodes=21, random_state = 0, ccp_alpha=i)
+  dt.fit(x_train_ss,y_train)
+  clfss.append(dt)
+print('Number of Nodes in the Last Tree is: {} with ccp_alpha: {}'.format(clfs[-1].tree_.node_count, ccp_alphas[-1]))
+
+train_sett = [dt.score(x_train_ss,y_train) for dt in clfss]
+test_sett = [dt.score(lucas,resampled_y) for dt in clfss]
+
+plt.figure(figsize = (12,10), dpi = 100)
+fig,ax = plt.subplots()
+ax.plot(ccp_alphass, train_sett, marker = '*', label = 'Train', drawstyle = 'steps-post')
+ax.plot(ccp_alphass, test_sett, marker = '*', label = 'Test', drawstyle = 'steps-post')
+ax.set_xlabel('ccp_alphas')
+ax.set_ylabel('Accuracy')
+ax.set_title("Accuracy and ccp_alphas Distribution")
+ax.legend()
+plt.show()
+
+mod_model_ccp = DecisionTreeClassifier(random_state = 0, ccp_alpha = 0.04)
+mod_model_ccp.fit(x_train_ss,y_train)
+
+print(mod_model_ccp.score(x_train_ss,y_train))
+print(mod_model_ccp.score(x_test_ss, y_test))
+
+predicate = mod_model_ccp.predict(lucas)
+
+print(accuracy_score(predicate,resampled_y))
+
+print(precision_score(predicate, resampled_y))
+
+print(recall_score(predicate, resampled_y))
+
+print(f1_score(predicate, resampled_y))
+
+
+
+
+
+
+
+### Tree plot with respect to ccp_modified_model
+
+plt.figure(figsize = (12,10))
+tree.plot_tree(mod_model_ccp, filled=True)
+
+## **Logistic Regression**
+
+from sklearn.linear_model import LogisticRegression
+lg = LogisticRegression()
+lg.fit(x_train_ss, y_train)
+lg_pred = lg.predict(x_test_ss)
+predicted_values = lg.predict_proba(x_test_ss)
+
+print('Training Accuracy:', lg.score(x_train_ss,y_train))
+print('Test Accuracy:', lg.score(x_test_ss,y_test))
+
+recall_score(y_test, lg_pred)
+
+precision_score(y_test,lg_pred)
+
+f1_score(y_test,lg_pred)
+
+y_testt = y_test.squeeze()
+
+precision_points, recall_points, threshold_points = precision_recall_curve(y_testt, predicted_values[:,1]) 
+
+precision_points.shape, recall_points.shape, threshold_points.shape
+
+precision_points
+
+recall_points
+
+threshold_points
+
+plt.figure(figsize = (12,10), dpi = 100)
+plt.plot(threshold_points, recall_points[:-1], color = 'red')
+plt.plot(threshold_points, precision_points[:-1], color = 'blue')
+plt.show()
+
+### Feature Importance 
+
+lg.coef_
+
+f_imp = lg.coef_[0]
+print(f_imp)
+for i,v in enumerate(f_imp):
+   print('Feature: %0d, Score: %.5f' % (i,v))
+
+plt.figure(figsize =(8,6), dpi = 100)
+plt.bar([i for i in range(len(f_imp))], f_imp)
+plt.xlabel('len(f_imp)')
+plt.ylabel('f_importances')
+plt.title('LR Feature Importances')
+plt.show()
+
+### Evaluating LogisticRegresssion using roc_auc_score metric.
+
+tpr,fpr, threshold = roc_curve(y_testt, predicted_values[:,1])
+tpr.shape, fpr.shape, threshold.shape
+
+plt.figure(figsize = (12,10), dpi = 100)
+plt.plot(tpr,fpr, color = 'red')
+plt.plot([0,1],[0,1], color = 'blue')
+plt.title("roc_curve")
+plt.show()
+
+print(roc_auc_score(y_test, predicted_values[:,1]))
+
+print("Training Accuracy ", lg.score(x_train_ss,y_train))
+print("Testing Accuracy ", lg.score(x_test_ss,y_test))
+
+print(classification_report(lg_pred, y_test))
+
+print(confusion_matrix(lg_pred, y_test))
+
+print(accuracy_score(lg_pred,y_test))
+
+### Performing Cross Validating LR Model.
+
+x = pd.DataFrame(data = x_train_ss, columns = inde_vars.columns)
+y = y_train
+from sklearn.model_selection import  StratifiedKFold
+accuracy1 = []
+skf = StratifiedKFold(n_splits = 10, random_state = None)
+skf.get_n_splits(x,y)
+for train_index, test_index in skf.split(x,y):
+  print('Train:', train_index, 'Validation',test_index)
+  x1_train,x1_test = x.iloc[train_index],x.iloc[test_index]
+  y1_train,y1_test = y.iloc[train_index],y.iloc[test_index]
+  lg.fit(x1_train,y1_train)
+  pred = lg.predict(x1_test)
+  score = accuracy_score(pred,y1_test)
+  accuracy1.append(score)
+print(accuracy1)
+
+### Hyper Parameter Tuning Logistic regression model, using RandomizedSearchCV tool.
+
+lo = LogisticRegression()
+
+
+parameters = {'penalty':['l1','l2','elasticnet','none'],
+              'solver':['newton-cg','lbfgs','sag','saga'],
+              'max_iter':[i for i in range(100,2000,100)], 
+              'warm_start':['True','False']}
+
+
+print(parameters)
+
+lg_tuned_model = RandomizedSearchCV(estimator=lo, param_distributions = parameters, scoring='accuracy', n_jobs = -1, cv = 10, n_iter = 10, verbose = 2, random_state = 50)
+
+lg_tuned_model.fit(x_train_ss,y_train)
+
+lg_tuned_model.best_params_
+
+lg_tuned_model.get_params
+
+lg_tuned_model.best_score_
+
+### Testing the Accuracy using Tuned LR Model.
+
+lr = LogisticRegression(max_iter = 1300,
+                        penalty='l2',
+                        solver= 'newton-cg',
+                        warm_start=True)
+lr.fit(x_train_ss,y_train)
+
+tuned_pred = lr.predict(x_test_ss)
+print(accuracy_score(tuned_pred,y_test))
+
+### **Evaluating Tuned Model on Test Data.**
+
+print('Tuned Training Accuracy:', lr.score(x_train_ss, y_train))
+
+jim = lr.predict(lucas)
+print(accuracy_score(jim, resampled_y))
+
+print(roc_auc_score(jim, resampled_y))
+
+print(precision_score(jim, resampled_y))
+
+print(recall_score(jim, resampled_y))
+
+print(f1_score(jim, resampled_y))
+
+###### Results of LR Model without Tuning.
+
+pam = lg.predict(lucas)
+print(accuracy_score(pam, resampled_y))
+
+print(precision_score(pam, resampled_y))
+
+print(recall_score(pam, resampled_y))
+
+print(f1_score(pam, resampled_y))
+
+## **Random Forest Classifier**
+
+from sklearn.ensemble import RandomForestClassifier
+rf = RandomForestClassifier()
+rf.fit(x_train_ss, y_train)
+rf_pred = rf.predict(x_test_ss)
+
+print("Training accuracy is", rf.score(x_train_ss, y_train))
+print('Testing Accuracy is', rf.score(x_test_ss, y_test))
+print(accuracy_score(y_test, rf_pred))
+
+print(confusion_matrix(y_test, rf_pred))
+
+print(classification_report(y_test, rf_pred))
+
+recall_score(y_test, rf_pred)
+
+precision_score(y_test, rf_pred)
+
+f1_score(y_test, rf_pred)
+
+### Feature Importance  
+
+rf.feature_importances_
+
+fe_imp = rf.feature_importances_
+for i,v in enumerate(fe_imp):
+  print('Feature: %0d, Score: %.5f' % (i,v))
+
+plt.figure(figsize =(8,6), dpi = 100)
+plt.bar([i for i in range(len(fe_imp))], fe_imp)
+plt.xlabel('len(f_imp)')
+plt.ylabel('f_importances')
+plt.title('RF Feature Importances')
+plt.show()
+
+### Performing Cross Validation on RFC Model.
+
+x = pd.DataFrame(data = x_train_ss, columns = inde_vars.columns)
+y = y_train
+from sklearn.model_selection import  StratifiedKFold
+accuracy2 = []
+skf = StratifiedKFold(n_splits = 10, random_state = None)
+skf.get_n_splits(x,y)
+for train_index, test_index in skf.split(x,y):
+  print('Train:', train_index, 'Validation',test_index)
+  x1_train,x1_test = x.iloc[train_index],x.iloc[test_index]
+  y1_train,y1_test = y.iloc[train_index],y.iloc[test_index]
+  rf.fit(x1_train,y1_train)
+  pred = rf.predict(x1_test)
+  score = accuracy_score(pred,y1_test)
+  accuracy2.append(score)
+print(accuracy2)
+
+### Hyper Parameter Tuning Random Forest Model Using RandomizedSearchCV.
+
+rfc = RandomForestClassifier()
+#rfc
+
+param = {'n_estimators' : [i for i in range(100,1500,100)],
+         'max_depth' : [i for i in range(10,100,10)],
+         'max_features' : ['auto','sqrt','log2'],
+         'min_samples_split' :  np.linspace(0.1,1.0,10, endpoint = True),
+         'min_samples_leaf' : np.linspace(0.1,0.5,5, endpoint =True),
+         'warm_start' : ['True', 'False']
+}
+
+#param
+
+rf_tuned_model = RandomizedSearchCV(estimator =rfc, param_distributions=param, scoring = 'roc_auc', verbose = 2, n_jobs = -1, random_state = 50)
+
+rf_tuned_model.fit(x_train_ss,y_train)
+
+rf_tuned_model.best_score_
+
+rf_tuned_model.get_params
+
+rf_tuned_model.best_estimator_
+
+Before Tuning the Random Forest Model.
+
+dwight = rf.predict(lucas)
+print(accuracy_score(dwight, resampled_y))
+
+print('Testing Accuracy:', rf.score(lucas, resampled_y))
+
+print(precision_score(dwight, resampled_y))
+
+print(recall_score(resampled_y, dwight))
+
+print(f1_score(resampled_y, dwight))
+
+### **Evaluating Tuned Model on Test Data.**
+
+kite = RandomForestClassifier(bootstrap=True, ccp_alpha=0.0, class_weight=None,
+                       criterion='gini', max_depth=40, max_features='sqrt',
+                       max_leaf_nodes=None, max_samples=None,
+                       min_impurity_decrease=0.0, min_impurity_split=None,
+                       min_samples_leaf=0.1, min_samples_split=0.1,
+                       min_weight_fraction_leaf=0.0, n_estimators=100,
+                       n_jobs=None, oob_score=False, random_state=None,
+                       verbose=0, warm_start='True')
+
+kite.fit(x_train_ss,y_train)
+
+print('Tuned Training Score:', kite.score(x_train_ss, y_train))
+
+print('Testing Accuracy:', kite.score(lucas, resampled_y))
+
+lion = kite.predict(lucas)
+print(accuracy_score(lion,resampled_y))
+
+print(recall_score(resampled_y, lion))
+
+print(precision_score(resampled_y, lion))
+
+print(f1_score(resampled_y, lion))
+
